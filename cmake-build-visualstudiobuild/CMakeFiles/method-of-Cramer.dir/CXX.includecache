@@ -1,0 +1,26 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+C:/Users/user/CLionProjects/method-of-Cramer/cramer.h
+iostream
+-
+vector
+-
+cmath
+-
+algorithm
+-
+thread
+-
+time.h
+-
+
+C:/Users/user/CLionProjects/method-of-Cramer/main.cpp
+cramer.h
+C:/Users/user/CLionProjects/method-of-Cramer/cramer.h
+
