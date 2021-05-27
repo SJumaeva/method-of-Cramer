@@ -1,9 +1,12 @@
 #include <iostream>
+#include <sstream> 
 #include <vector>
 #include <cmath>
 #include <algorithm>
 #include <thread>
 #include <time.h>
+#include <atomic>
+#include <chrono>
 
 
 using namespace std;
@@ -23,6 +26,41 @@ std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
 
     return os << ']';
 }
+
+// stopwatch. Returns time in seconds
+class timer {
+public:
+    std::chrono::time_point<std::chrono::high_resolution_clock> lastTime;
+    timer() : lastTime(std::chrono::high_resolution_clock::now()) {}
+    inline double elapsed() {
+        std::chrono::time_point<std::chrono::high_resolution_clock> thisTime=std::chrono::high_resolution_clock::now();
+        double deltaTime = std::chrono::duration<double>(thisTime-lastTime).count();
+        lastTime = thisTime;
+        return deltaTime;
+    }
+};
+
+
+/** Thread safe cout class
+  * Exemple of use:
+  *    PrintThread{} << "Hello world!" << std::endl;
+  */
+class PrintThread: public std::ostringstream
+{
+public:
+    PrintThread() = default;
+
+    ~PrintThread()
+    {
+        std::lock_guard<std::mutex> guard(_mutexPrint);
+        std::cout << this->str();
+    }
+
+private:
+    static std::mutex _mutexPrint;
+};
+
+std::mutex PrintThread::_mutexPrint{};
 
 const double SMALL = 1.0E-30;
 
@@ -75,11 +113,16 @@ matrix insertInTerms(matrix &sourceMatrix, matrix tmpMatrix, vector<double> ins,
 }
 
 void solve(vector<double> &answer, matrix &A, int at, vector<double> &b, double &det) {
+    timer stopwatch;
     vector<vector<double>> tmpMatrix = insertInTerms(A, A, b, at);
     answer[at] = determinant(tmpMatrix) / det;
+    double elapsedTime = stopwatch.elapsed();
+    PrintThread{} << "elapsed time of " << at << "-thread-callback -> " << elapsedTime << std::endl;
 }
 
 vector<double> solveCramer(matrix &equations) {
+    PrintThread{} << "------------------" << std::endl;
+    timer stopwatch;
     int size = equations.size();
 
     vector<vector<double>> matrix(size);
@@ -111,6 +154,9 @@ vector<double> solveCramer(matrix &equations) {
             th.join();
     }
 
+    double elapsedTime = stopwatch.elapsed();
+
+    PrintThread{} << "overall elapsed time of  equation: " << elapsedTime << std::endl;
     return answer;
 }
 
