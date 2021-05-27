@@ -7,7 +7,7 @@
 #include <time.h>
 #include <atomic>
 #include <chrono>
-
+#include <mutex>
 
 using namespace std;
 
@@ -25,6 +25,26 @@ std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
     }
 
     return os << ']';
+}
+
+template<typename Vector>
+auto split_vector(const Vector& v, unsigned number_lines) {
+  using Iterator = typename Vector::const_iterator;
+  std::vector<Vector> rtn;
+  Iterator it = v.cbegin();
+  const Iterator end = v.cend();
+
+  while (it != end) {
+    Vector v;
+    std::back_insert_iterator<Vector> inserter(v);
+    const auto num_to_copy = std::min(static_cast<unsigned>(
+        std::distance(it, end)), number_lines);
+    std::copy(it, it + num_to_copy, inserter);
+    rtn.push_back(std::move(v));
+    std::advance(it, num_to_copy);
+  }
+
+  return rtn;
 }
 
 // stopwatch. Returns time in seconds
@@ -113,14 +133,24 @@ matrix insertInTerms(matrix &sourceMatrix, matrix tmpMatrix, vector<double> ins,
 }
 
 void solve(vector<double> &answer, matrix &A, int at, vector<double> &b, double &det) {
-    timer stopwatch;
     vector<vector<double>> tmpMatrix = insertInTerms(A, A, b, at);
     answer[at] = determinant(tmpMatrix) / det;
-    double elapsedTime = stopwatch.elapsed();
-    PrintThread{} << "elapsed time of " << at << "-thread-callback -> " << elapsedTime << std::endl;
 }
 
-vector<double> solveCramer(matrix &equations) {
+
+void solveA(vector<vector<int>> &workArray, int workArrayAt, vector<double> &answer, matrix &matrix,  vector<double> &column, double &det) {
+    timer stopwatch;
+    auto arr = workArray[workArrayAt];
+
+    for (int i = 0; i < arr.size(); i++) {
+        solve(answer, matrix, arr[i], column, det);
+    }
+    
+    double elapsedTime = stopwatch.elapsed();
+    PrintThread{} << "thread[" << workArrayAt+1 << "] = " << elapsedTime << " sec" << std::endl;
+}
+
+vector<double> solveCramer(matrix &equations, const int& threadNum) {
     PrintThread{} << "------------------" << std::endl;
     timer stopwatch;
     int size = equations.size();
@@ -141,25 +171,43 @@ vector<double> solveCramer(matrix &equations) {
     }
 
     vector<double> answer(matrix.size());
-    vector<std::thread> vecOfThreads;
+    vector<int> tmpArray;
+    
+    // vector1.insert( vector1.end(), vector2.begin(), vector2.end() );
     for (int i = 0; i < matrix.size(); i++)
-    {
-        std::thread th(solve, ref(answer), ref(matrix), i, ref(column), ref(det));
-        vecOfThreads.push_back(move(th));
+    {   
+        tmpArray.push_back(i);
     }
 
-    for (std::thread & th : vecOfThreads)
-    {
-        if (th.joinable())
-            th.join();
+
+    cout << "threadNum: " << threadNum << endl;
+
+    if (threadNum == 1 && (matrix.size() < threadNum)) {
+        for (int i = 0; i < matrix.size(); i++) {
+            solve(answer, matrix, i, column, det);
+        }            
+    } else if (threadNum >= 1) {
+        // cout << "tmpArray:: " << tmpArray << endl;
+        auto workerArr = split_vector(tmpArray, (matrix.size() / threadNum));
+        // cout << "workArr:: " << workerArr << endl; 
+        vector<std::thread> vecOfThreads;
+        for (int i = 0; i < workerArr.size(); i++) {
+            std::thread th(solveA, ref(workerArr), i, ref(answer), ref(matrix), ref(column), ref(det));
+            vecOfThreads.push_back(move(th));
+        }
+
+        for (std::thread & th : vecOfThreads)
+        {
+            if (th.joinable())
+                th.join();
+        }
     }
 
     double elapsedTime = stopwatch.elapsed();
 
-    PrintThread{} << "overall elapsed time of  equation: " << elapsedTime << std::endl;
+    PrintThread{} << "overall elapsed time of equation: " << elapsedTime << " sec" << std::endl;
     return answer;
 }
-
 
 matrix generateRandomMatrix(const int& size) {
     matrix eq;  
@@ -187,4 +235,3 @@ void printMatrix(matrix& eq) {
         cout << "" << endl;
     }
 }
-
