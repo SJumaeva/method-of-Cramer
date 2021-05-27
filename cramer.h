@@ -160,3 +160,31 @@ vector<double> solveCramer(matrix &equations) {
     return answer;
 }
 
+
+matrix generateRandomMatrix(const int& size) {
+    matrix eq;  
+    for (int i = 0; i < size; i++) {
+        vector<double> vecOfRandomNums(size);
+        generate(vecOfRandomNums.begin(), vecOfRandomNums.end(), []() {
+            return rand() % 100;
+        });
+
+        eq.push_back(vecOfRandomNums);
+    }
+    
+
+    return eq;
+}
+
+void printMatrix(matrix& eq) {
+    cout << "-------------" << endl;
+    
+    for (int i = 0; i < eq.size(); i++) {
+        for (int j = 0; j < eq.size(); j++) {
+            cout << eq[i][j] << ' ';
+        }
+
+        cout << "" << endl;
+    }
+}
+
