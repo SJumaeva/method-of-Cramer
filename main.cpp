@@ -4,20 +4,24 @@ int main() {
  
     matrix eq;
     
-    eq = generateRandomMatrix(3);
+    eq = generateRandomMatrix(1);
     printMatrix(eq);
     cout << solveCramer(eq) << '\n';
 
-    eq = generateRandomMatrix(5);
-    printMatrix(eq);
-    cout << solveCramer(eq) << '\n';
-
-
-    eq = generateRandomMatrix(7);
+    eq = generateRandomMatrix(2);
     printMatrix(eq);
     cout << solveCramer(eq) << '\n';
 
 
+    eq = generateRandomMatrix(4);
+    printMatrix(eq);
+    cout << solveCramer(eq) << '\n';
+
+    eq = generateRandomMatrix(8);
+    printMatrix(eq);
+    cout << solveCramer(eq) << '\n';
+ 
+ 
     for (int i = 9; i < 30; i++) {
         eq = generateRandomMatrix(i);
         printMatrix(eq);
