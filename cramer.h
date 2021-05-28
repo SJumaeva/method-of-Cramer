@@ -5,9 +5,11 @@
 #include <algorithm>
 #include <thread>
 #include <time.h>
+#include <ctime>
 #include <atomic>
 #include <chrono>
 #include <mutex>
+#include <random>
 
 using namespace std;
 
@@ -110,7 +112,10 @@ double determinant(matrix A) {
 
         // Рядные операции для получения верхнетреугольной формы
         double pivot = A[i][i];
-        if (abs(pivot) < SMALL) return 0.0;              // Сингулярная матрица
+        if (abs(pivot) < SMALL) {
+            PrintThread{} << "singularity" << std::endl;
+            return 0.0;
+        }              // Сингулярная матрица
 
         for (int r = i + 1; r < n; r++)                    // На нижних рядах
         {
@@ -210,7 +215,14 @@ vector<double> solveCramer(matrix &equations, const int& threadNum) {
 }
 
 matrix generateRandomMatrix(const int& size) {
-    matrix eq;  
+    matrix eq;
+
+    // random sleep для srand(clock())
+    std::mt19937_64 eng{std::random_device{}()};  // 
+    std::uniform_int_distribution<> dist{10, 100};
+    std::this_thread::sleep_for(std::chrono::milliseconds{dist(eng)});
+
+    srand ( clock() );  
     for (int i = 0; i < size; i++) {
         vector<double> vecOfRandomNums(size);
         generate(vecOfRandomNums.begin(), vecOfRandomNums.end(), []() {
